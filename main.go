@@ -11,17 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
-
-	//"time"
 	"encoding/json"
+	"github.com/gorilla/websocket"
 	"strings"
 
 	"github.com/alvaro/asr_server/server/receiver"
 	//"github.com/acepero13/cloud-client-go" // TODO: Use once it becomes stable enough
 )
 
-//TODO: Manage errors
 // TODO: Refactor
 // TODO: Handle timeouts, so the server does not die
 
@@ -52,20 +49,29 @@ func (c *cerenceClient) SetState(st receiver.RequestState) {
 	*c.state = st
 }
 
-func (c *cerenceClient) SendHeder() {
-	c.client.SendHeaders(c.config.Headers)
+func (c *cerenceClient) SendHeader() {
+	err := c.client.SendHeaders(c.config.Headers)
+	if err != nil {
+		ConsoleLogger.Fatalln("Couldn't sent header to cloud server")
+	}
 }
 
 func (c *cerenceClient) SendRequest() {
 	for _, part := range c.config.MultiParts {
 		if part.Type == JsonType {
-			sendJSONMsg(c.client, part)
+			err := sendJSONMsg(c.client, part)
+			if err != nil {
+				ConsoleLogger.Fatalln("Couldn't sent request to cloud server")
+			}
 		}
 	}
 }
 
 func (c *cerenceClient) SendEndRequest() {
-	c.client.SendMultiPartEnd()
+	err := c.client.SendMultiPartEnd()
+	if err != nil {
+		ConsoleLogger.Fatalln("Couldn't sent End of request to cloud server")
+	}
 }
 
 func (c *cerenceClient) SendAudioChunk(chunk []byte) {
@@ -159,6 +165,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			if err := recover(); err != nil {
 				ConsoleLogger.Println(err)
 			}
+
+			err := client.Close()
+			if err != nil {
+				ConsoleLogger.Fatalln("Couldn't close connection")
+			}
 		}()
 		defer wg.Done()
 
@@ -216,11 +227,11 @@ func receiveResult(client *HttpV2Client) {
 
 		PrintPrettyJson(receiving, chunk.Body.Bytes())
 
-		json := PrintPrettyJson(receiving, chunk.Body.Bytes())
+		formattedJson := PrintPrettyJson(receiving, chunk.Body.Bytes())
 
-		ConsoleLogger.Println(json + CRLF)
+		ConsoleLogger.Println(formattedJson + CRLF)
 
-		broadcast <- []byte(json)
+		broadcast <- []byte(formattedJson)
 
 	}
 }
@@ -250,7 +261,10 @@ func handleMessages() {
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Printf("error: %v", err)
-				client.Close()
+				err := client.Close()
+				if err != nil {
+					ConsoleLogger.Fatalln("Couldn't close connection with client")
+				}
 				delete(clients, client)
 			}
 		}
