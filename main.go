@@ -142,24 +142,13 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	clients[ws] = true
 
-	config := config2.ReadConfig("config/asr_sem.json")
-	client := NewHttpV2Client(config.Host, config.Port, WithProtocol(config.Protocol), WithPath(config.Path), WithBoundary(config.GetBoundary()))
+	client, cerenceCli := createClient()
 
-	if err := client.Connect(); err != nil {
-		ConsoleLogger.Fatalln("Can't connect to server")
-	}
+	startConnection(client, ws, cerenceCli)
 
-	var state *receiver.RequestState
-	state = new(receiver.RequestState)
-	state.IsFirstChunk = true
+}
 
-	var cerenceCli *cerenceClient
-	cerenceCli = new(cerenceClient)
-
-	cerenceCli.client = client
-	cerenceCli.config = config
-	cerenceCli.state = state
-
+func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *cerenceClient) {
 	wg.Add(2)
 
 	go func() {
@@ -170,8 +159,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			}
 
 			err := client.Close()
+			fmt.Println("Finihing first")
 			if err != nil {
-				ConsoleLogger.Fatalln("Couldn't close connection")
+				//ConsoleLogger.Fatalln("Couldn't close connection")
 			}
 		}()
 		defer wg.Done()
@@ -194,31 +184,66 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			time.Sleep(30)
+			if cerenceCli.state.IsFinished {
+				cerenceCli.client.Close()
+				break
+			}
 			// Send the newly received message to the broadcast channel
 			//broadcast <- []byte("")
 
-		}
+		} //					ConsoleLogger.Fatalln(err.Error())
+		fmt.Println("Finished sending")
 	}()
 
 	go func() {
 		defer func() {
+			fmt.Println("Finihing second")
+			fmt.Println("Should come last")
 			if err := recover(); err != nil {
 				ConsoleLogger.Println(err)
 			}
 		}()
 		defer wg.Done()
-		receiveResult(client)
+		receiveResult(cerenceCli)
 		ConsoleLogger.Println("Receive done")
 	}()
 
 	wg.Wait()
 }
 
+func createClient() (*HttpV2Client, *cerenceClient) {
+	config := config2.ReadConfig("config/asr_sem.json")
+	client := NewHttpV2Client(config.Host, config.Port, WithProtocol(config.Protocol), WithPath(config.Path), WithBoundary(config.GetBoundary()))
+
+	if err := client.Connect(); err != nil {
+		ConsoleLogger.Fatalln("Can't connect to server")
+	}
+
+	var state *receiver.RequestState
+	state = new(receiver.RequestState)
+	state.IsFirstChunk = true
+
+	var cerenceCli *cerenceClient
+	cerenceCli = new(cerenceClient)
+
+	cerenceCli.client = client
+	cerenceCli.config = config
+	cerenceCli.state = state
+	return client, cerenceCli
+}
+
 const receiving = "Receiving:"
 
-func receiveResult(client *HttpV2Client) {
+func receiveResult(cerenceCli *cerenceClient) {
+	client := cerenceCli.client
 	go client.Receive()
 	for chunk := range client.GetReceivedChunkChannel() {
+
+		if string(chunk.Body.Bytes()) == "Close" {
+			fmt.Println("Please close connection")
+			break
+		}
+
 		parameters, _ := handleBoundaryAndParameters(chunk.BoundaryAndParameters)
 		if len(parameters) > 0 {
 			ConsoleLogger.Println(fmt.Sprintf("%s multiple parts", receiving))
@@ -232,11 +257,12 @@ func receiveResult(client *HttpV2Client) {
 
 		formattedJson := PrintPrettyJson(receiving, chunk.Body.Bytes())
 
-		ConsoleLogger.Println(formattedJson + CRLF)
+		//ConsoleLogger.Println(formattedJson + CRLF)
 
 		broadcast <- []byte(formattedJson)
 
 	}
+	fmt.Println("ENDED FOR")
 }
 
 func handleBoundaryAndParameters(bytes bytes.Buffer) ([]string, bool) {
