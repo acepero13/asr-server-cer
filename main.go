@@ -1,44 +1,40 @@
 package main
 
 import (
-	"bytes"
 	config2 "cloud-client-go/config"
 	. "cloud-client-go/http_v2_client"
 	. "cloud-client-go/util"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
-	"net/http"
+
 	"sync"
 	"time"
 
 	"encoding/json"
-	"github.com/gorilla/websocket"
-	"strings"
-
+	"github.com/alvaro/asr_server/server"
 	"github.com/alvaro/asr_server/server/receiver"
 	//"github.com/acepero13/cloud-client-go" // TODO: Use once it becomes stable enough
 )
 
-// TODO: Refactor
 // TODO: Handle timeouts, so the server does not die
-
-var clients = make(map[*websocket.Conn]bool) // connected clients
-var broadcast = make(chan []byte)
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 var (
 	wg sync.WaitGroup
 )
 
 type cerenceClient struct {
-	client *HttpV2Client
-	config *config2.Config
-	state  *receiver.RequestState
+	client     *HttpV2Client
+	config     *config2.Config
+	state      *receiver.RequestState
+	connection *server.WsConnection
+	wsClient   *websocket.Conn
+}
+
+func main() {
+
+	server.StartServer(onNewConnection)
+
 }
 
 func (c *cerenceClient) GetState() receiver.RequestState {
@@ -109,43 +105,14 @@ func dequeue(queue [][]byte) ([]byte, [][]byte) {
 	return element, queue[1:] // Slice off the element once it is dequeued.
 }
 
-func main() {
-
-	http.HandleFunc("/ws", handleConnections)
-
-	// Start listening for incoming chat messages
-	go handleMessages()
-
-	// Start the server on localhost port 8000 and log any errors
-	log.Println("http server started on :2701")
-	err := http.ListenAndServe(":2701", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
-}
-
-func handleConnections(w http.ResponseWriter, r *http.Request) {
-	// Upgrade initial GET request to a websocket
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Make sure we close the connection when the function returns
-	defer ws.Close()
-
-	// Reset all clients
-	for c := range clients {
-		clients[c] = false
-	}
-	clients[ws] = true
-
+func onNewConnection(connection *server.WsConnection, wsClient *server.WsClient) {
 	client, cerenceCli := createClient()
-
-	startConnection(client, ws, cerenceCli)
-
+	cerenceCli.connection = connection
+	cerenceCli.wsClient = wsClient.WebsocketClient
+	startReceiverAndSender(client, wsClient, cerenceCli)
 }
 
-func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *cerenceClient) {
+func startReceiverAndSender(client *HttpV2Client, ws *server.WsClient, cerenceCli *cerenceClient) {
 	wg.Add(2)
 
 	go func() {
@@ -154,43 +121,16 @@ func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *ceren
 			if err := recover(); err != nil {
 				ConsoleLogger.Println(err)
 			}
-
 			err := client.Close()
 			logIfError(err, "Could not close connection")
 		}()
 		defer wg.Done()
 
-		var queue [][]byte
-
-		for {
-
-			// Read in a new message as JSON and map it to a Message object
-			_, data, err := ws.ReadMessage()
-			actualQueue := enqueue(queue, data)
-
-			msg, actualQueue := dequeue(actualQueue)
-			queue = actualQueue
-
-			cerenceCli = receiver.ReceiveWithClient(cerenceCli, msg).(*cerenceClient)
-
-			if err != nil {
-				log.Printf("error: %v", err)
-				break
-			}
-			time.Sleep(30)
-			if cerenceCli.state.IsFinished {
-				cerenceCli.client.Close()
-				break
-			}
-
-		}
-		fmt.Println("Finished sending")
+		cerenceCli = sendToCerenceFromWs(ws, cerenceCli)
 	}()
 
 	go func() {
 		defer func() {
-			fmt.Println("Finihing second")
-			fmt.Println("Should come last")
 			if err := recover(); err != nil {
 				ConsoleLogger.Println(err)
 			}
@@ -201,6 +141,34 @@ func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *ceren
 	}()
 
 	wg.Wait()
+}
+
+func sendToCerenceFromWs(ws *server.WsClient, cerenceCli *cerenceClient) *cerenceClient {
+	var queue [][]byte
+
+	for {
+		// Read in a new message as JSON and map it to a Message object
+		_, data, err := ws.WebsocketClient.ReadMessage()
+		actualQueue := enqueue(queue, data)
+
+		msg, actualQueue := dequeue(actualQueue)
+		queue = actualQueue
+
+		cerenceCli = receiver.ReceiveWithClient(cerenceCli, msg).(*cerenceClient)
+
+		if err != nil {
+			log.Printf("error: %v", err)
+			break
+		}
+		time.Sleep(30 * time.Millisecond)
+		if cerenceCli.state.IsFinished {
+			cerenceCli.client.Close()
+			break
+		}
+
+	}
+	fmt.Println("Finished sending")
+	return cerenceCli
 }
 
 func logIfError(err error, msg string) {
@@ -217,9 +185,14 @@ func createClient() (*HttpV2Client, *cerenceClient) {
 		ConsoleLogger.Fatalln("Can't connect to server")
 	}
 
+	return client, newCerenceClient(client, config)
+}
+
+func newCerenceClient(client *HttpV2Client, config *config2.Config) *cerenceClient {
 	var state *receiver.RequestState
 	state = new(receiver.RequestState)
 	state.IsFirstChunk = true
+	state.IsFinished = false
 
 	var cerenceCli *cerenceClient
 	cerenceCli = new(cerenceClient)
@@ -227,7 +200,7 @@ func createClient() (*HttpV2Client, *cerenceClient) {
 	cerenceCli.client = client
 	cerenceCli.config = config
 	cerenceCli.state = state
-	return client, cerenceCli
+	return cerenceCli
 }
 
 const receiving = "Receiving:"
@@ -236,64 +209,18 @@ func receiveResult(cerenceCli *cerenceClient) {
 	client := cerenceCli.client
 	go client.Receive()
 	for chunk := range client.GetReceivedChunkChannel() {
-
 		if string(chunk.Body.Bytes()) == "Close" {
 			fmt.Println("Please close connection")
 			break
 		}
 
-		parameters, _ := handleBoundaryAndParameters(chunk.BoundaryAndParameters)
-		if len(parameters) > 0 {
-			ConsoleLogger.Println(fmt.Sprintf("%s multiple parts", receiving))
-			for n := range parameters {
-				ConsoleLogger.Println(parameters[n])
-
-			}
-		}
-
 		PrintPrettyJson(receiving, chunk.Body.Bytes())
 
 		formattedJson := PrintPrettyJson(receiving, chunk.Body.Bytes())
-
-		broadcast <- []byte(formattedJson)
+		msg := server.NewWsMessage(cerenceCli.wsClient)
+		msg.Msg.Write([]byte(formattedJson))
+		cerenceCli.connection.MessageChannel <- *msg
 
 	}
 	fmt.Println("ENDED FOR")
-}
-
-func handleBoundaryAndParameters(bytes bytes.Buffer) ([]string, bool) {
-	data := strings.Split(bytes.String(), CRLF)
-	var parameters []string
-	isAudioPart := true
-	for n := range data {
-		if strings.Trim(data[n], "\r") != "" {
-			parameters = append(parameters, data[n])
-			if strings.Contains(data[n], "Content-Type: application/JSON;") {
-				isAudioPart = false
-			}
-		}
-	}
-	return parameters, isAudioPart
-}
-
-func handleMessages() {
-	for {
-		// Grab the next message from the broadcast channel
-		msg := <-broadcast
-		// Send it out to every client that is currently connected
-		for client := range clients {
-			if clients[client] != true { // Only notify the interested client
-				continue
-			}
-			err := client.WriteJSON(msg)
-			if err != nil {
-				log.Printf("error: %v", err)
-				err := client.Close()
-				if err != nil {
-					ConsoleLogger.Fatalln("Couldn't close connection with client")
-				}
-				delete(clients, client)
-			}
-		}
-	}
 }
