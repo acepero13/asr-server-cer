@@ -282,7 +282,6 @@ func handleBoundaryAndParameters(bytes bytes.Buffer) ([]string, bool) {
 
 func handleMessages() {
 	for {
-		// TODO: Send it only the the current client
 		// Grab the next message from the broadcast channel
 		msg := <-broadcast
 		// Send it out to every client that is currently connected
