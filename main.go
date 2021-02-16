@@ -101,13 +101,11 @@ func sendJSONMsg(client *HttpV2Client, part config2.MultiPart) error {
 
 func enqueue(queue [][]byte, element []byte) [][]byte {
 	queue = append(queue, element) // Simply append to enqueue.
-	//fmt.Println("Enqueued:", element)
 	return queue
 }
 
 func dequeue(queue [][]byte) ([]byte, [][]byte) {
-	element := queue[0] // The first element is the one to be dequeued.
-	//fmt.Println("Dequeued:", element)
+	element := queue[0]       // The first element is the one to be dequeued.
 	return element, queue[1:] // Slice off the element once it is dequeued.
 }
 
@@ -158,10 +156,7 @@ func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *ceren
 			}
 
 			err := client.Close()
-			fmt.Println("Finihing first")
-			if err != nil {
-				//ConsoleLogger.Fatalln("Couldn't close connection")
-			}
+			logIfError(err, "Could not close connection")
 		}()
 		defer wg.Done()
 
@@ -187,10 +182,8 @@ func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *ceren
 				cerenceCli.client.Close()
 				break
 			}
-			// Send the newly received message to the broadcast channel
-			//broadcast <- []byte("")
 
-		} //					ConsoleLogger.Fatalln(err.Error())
+		}
 		fmt.Println("Finished sending")
 	}()
 
@@ -208,6 +201,12 @@ func startConnection(client *HttpV2Client, ws *websocket.Conn, cerenceCli *ceren
 	}()
 
 	wg.Wait()
+}
+
+func logIfError(err error, msg string) {
+	if err != nil {
+		fmt.Println(msg+" err: %s", err.Error())
+	}
 }
 
 func createClient() (*HttpV2Client, *cerenceClient) {
@@ -255,8 +254,6 @@ func receiveResult(cerenceCli *cerenceClient) {
 		PrintPrettyJson(receiving, chunk.Body.Bytes())
 
 		formattedJson := PrintPrettyJson(receiving, chunk.Body.Bytes())
-
-		//ConsoleLogger.Println(formattedJson + CRLF)
 
 		broadcast <- []byte(formattedJson)
 
