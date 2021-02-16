@@ -51,8 +51,12 @@ func (c *cerenceClient) SetState(st receiver.RequestState) {
 
 func (c *cerenceClient) SendHeader() {
 	err := c.client.SendHeaders(c.config.Headers)
+	ifErrorDie(err)
+}
+
+func ifErrorDie(err error) {
 	if err != nil {
-		ConsoleLogger.Fatalln("Couldn't sent header to cloud server")
+		ConsoleLogger.Fatalln("error %s", err.Error())
 	}
 }
 
@@ -60,18 +64,14 @@ func (c *cerenceClient) SendRequest() {
 	for _, part := range c.config.MultiParts {
 		if part.Type == JsonType {
 			err := sendJSONMsg(c.client, part)
-			if err != nil {
-				ConsoleLogger.Fatalln("Couldn't sent request to cloud server")
-			}
+			ifErrorDie(err)
 		}
 	}
 }
 
 func (c *cerenceClient) SendEndRequest() {
 	err := c.client.SendMultiPartEnd()
-	if err != nil {
-		ConsoleLogger.Fatalln("Couldn't sent End of request to cloud server")
-	}
+	ifErrorDie(err)
 }
 
 func (c *cerenceClient) SendAudioChunk(chunk []byte) {
@@ -86,9 +86,8 @@ func (c *cerenceClient) SendAudioChunk(chunk []byte) {
 
 func sendAudioMsg(client *HttpV2Client, part config2.MultiPart, chunk []byte) {
 
-	if err := client.SendMultiPart(part.Parameters, chunk); err != nil {
-		ConsoleLogger.Fatalln(err)
-	}
+	err := client.SendMultiPart(part.Parameters, chunk)
+	ifErrorDie(err)
 }
 
 func sendJSONMsg(client *HttpV2Client, part config2.MultiPart) error {
