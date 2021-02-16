@@ -21,7 +21,6 @@ import (
 	//"github.com/acepero13/cloud-client-go" // TODO: Use once it becomes stable enough
 )
 
-//TODO: Manage errors
 // TODO: Refactor
 // TODO: Handle timeouts, so the server does not die
 
