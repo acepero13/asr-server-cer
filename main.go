@@ -136,7 +136,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Make sure we close the connection when the function returns
 	defer ws.Close()
 
-	// Register our new client
+	// Reset all clients
+	for c := range clients {
+		clients[c] = false
+	}
 	clients[ws] = true
 
 	config := config2.ReadConfig("config/asr_sem.json")
@@ -258,6 +261,9 @@ func handleMessages() {
 		msg := <-broadcast
 		// Send it out to every client that is currently connected
 		for client := range clients {
+			if clients[client] != true { // Only notify the interested client
+				continue
+			}
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Printf("error: %v", err)
