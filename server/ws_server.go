@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"github.com/alvaro/asr_server/server/receiver"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ type WsClient struct {
 	Connected       bool
 	WebsocketClient *websocket.Conn
 	Msg             bytes.Buffer
+	IsLastMessage   bool
 }
 
 func NewWsMessage(conn *websocket.Conn) *WsClient {
@@ -26,6 +28,7 @@ func NewWsMessage(conn *websocket.Conn) *WsClient {
 		Connected:       true,
 		WebsocketClient: conn,
 		Msg:             bytes.Buffer{},
+		IsLastMessage:   false,
 	}
 }
 
@@ -58,13 +61,24 @@ func StartServer(onNewConnection func(*WsConnection, *WsClient)) {
 }
 
 func messageHandler() {
+	var singleResult *receiver.AsrResult
 	for {
 		// Grab the next message from the broadcast channel
 		msg := <-connection.MessageChannel
 
 		temp := make([]byte, msg.Msg.Len())
 		_, errRead := msg.Msg.Read(temp)
-		err := msg.WebsocketClient.WriteJSON(temp)
+
+		asrResult, errDecod := receiver.NewAsrResultFrom(temp)
+		singleResult = asrResult.GetAtMost(1)
+		if msg.IsLastMessage {
+			singleResult.FinalResponse = 1
+		}
+		toSend, errEncod := singleResult.ToBytes()
+		if errDecod != nil || errEncod != nil {
+			continue
+		}
+		err := msg.WebsocketClient.WriteJSON(toSend)
 		if errRead != nil {
 			fmt.Println("Error reading buffer")
 		}

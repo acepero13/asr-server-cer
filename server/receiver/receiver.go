@@ -59,5 +59,7 @@ func ReceiveWithClient(c Client, data []byte) Client {
 }
 
 func logIfErr(err error, msg string) {
-	fmt.Println(msg, err.Error())
+	if err != nil {
+		fmt.Println(msg, err.Error())
+	}
 }

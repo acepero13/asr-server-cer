@@ -160,6 +160,10 @@ func sendToCerenceFromWs(ws *server.WsClient, cerenceCli *cerenceClient) *cerenc
 		}
 		time.Sleep(30 * time.Millisecond)
 		if cerenceCli.state.IsFinished {
+			err := ws.WebsocketClient.WriteJSON([]byte(`{"recognition_finished": "1"}`))
+			fmt.Println("SENDING END OF RECOGNITION")
+			logIfError(err, "Could not send recognition finished")
+			time.Sleep(300 * time.Millisecond)
 			_ = cerenceCli.client.Close()
 			break
 		}

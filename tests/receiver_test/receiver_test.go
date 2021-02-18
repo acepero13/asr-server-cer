@@ -43,13 +43,6 @@ func (c *dummyClient) SetState(st receiver.RequestState) {
 	*c.state = st
 }
 
-func TestCannotProcessUnexpecteData(t *testing.T) {
-	_, err := receiver.Receive([]byte("{\"unexpected\": true}"))
-	if err != nil {
-		t.Errorf("This should have failed")
-	}
-}
-
 func TestReceivesFirstChunkCallsSendHeaderPlusFirstChunk(t *testing.T) {
 	var c *dummyClient
 	c = new(dummyClient)
@@ -155,7 +148,7 @@ func TestReceivesAsrEndedEventResetsChunkCounter(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.ReceiveWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
+	var client = receiver.ReceiveWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
 
 	var st = client.GetState()
 	if st.IsFirstChunk != true {
