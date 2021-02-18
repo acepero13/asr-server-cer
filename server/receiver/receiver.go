@@ -1,11 +1,10 @@
 package receiver
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 import "encoding/json"
-
-type command interface {
-	Execute(data []byte)
-}
 
 type RequestState struct {
 	IsFirstChunk bool
@@ -25,15 +24,12 @@ type asrEvent struct {
 	Event string `json:"asr_event"`
 }
 
-func Receive(data []byte) (*Client, error) {
-	return nil, nil
-}
-
 func ReceiveWithClient(c Client, data []byte) Client {
 	var s = c.GetState()
 	if strings.Contains(string(data), "asr_event") {
 		var ev asrEvent
-		json.Unmarshal(data, &ev)
+		err := json.Unmarshal(data, &ev)
+		logIfErr(err, "Error parsing json")
 		if ev.Event == "stopped" {
 			var st = RequestState{}
 			st.IsFirstChunk = true
@@ -60,4 +56,8 @@ func ReceiveWithClient(c Client, data []byte) Client {
 	c.SetState(st)
 
 	return c
+}
+
+func logIfErr(err error, msg string) {
+	fmt.Println(msg, err.Error())
 }

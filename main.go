@@ -17,8 +17,6 @@ import (
 	//"github.com/acepero13/cloud-client-go" // TODO: Use once it becomes stable enough
 )
 
-// TODO: Handle timeouts, so the server does not die
-
 var (
 	wg sync.WaitGroup
 )
@@ -162,7 +160,7 @@ func sendToCerenceFromWs(ws *server.WsClient, cerenceCli *cerenceClient) *cerenc
 		}
 		time.Sleep(30 * time.Millisecond)
 		if cerenceCli.state.IsFinished {
-			cerenceCli.client.Close()
+			_ = cerenceCli.client.Close()
 			break
 		}
 
@@ -213,8 +211,6 @@ func receiveResult(cerenceCli *cerenceClient) {
 			fmt.Println("Please close connection")
 			break
 		}
-
-		PrintPrettyJson(receiving, chunk.Body.Bytes())
 
 		formattedJson := PrintPrettyJson(receiving, chunk.Body.Bytes())
 		msg := server.NewWsMessage(cerenceCli.wsClient)
