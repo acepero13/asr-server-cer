@@ -55,3 +55,30 @@ func TestAsrResult_ReduceResultToTwoElements(t *testing.T) {
 		t.Errorf("Wrong word")
 	}
 }
+
+func TestAsrResult_RequestMoreThanPossible(t *testing.T) {
+	result, _ := receiver.NewAsrResultFrom([]byte(JSONWithThreeResults))
+
+	reduced := result.GetAtMost(4)
+	if len(reduced.Words) != 3 {
+		t.Errorf("Did not reduce number of words")
+	}
+
+	if result.Words[0][1].Word != "bin" {
+		t.Errorf("Wrong word")
+	}
+}
+
+func TestAsrResult_RequestFromEmpty(t *testing.T) {
+	result := receiver.AsrResult{
+		Confidences:    []int{},
+		Transcriptions: []string{},
+		Words:          nil,
+	}
+
+	reduced := result.GetAtMost(1)
+	if len(reduced.Words) != 0 {
+		t.Errorf("Did not reduce number of words")
+	}
+
+}

@@ -1,6 +1,8 @@
 package receiver
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // AsrResult /** Wraps the Asr result returned by cerence server
 
@@ -18,12 +20,29 @@ type Word struct {
 
 func (res *AsrResult) GetAtMost(numResults int) *AsrResult {
 
-	return &AsrResult{
-		Confidences:    res.Confidences[:numResults],
-		Words:          res.Words[:numResults],
-		Transcriptions: res.Transcriptions[:numResults],
+	itemsToGet := min(numResults, len(res.Confidences))
+
+	if itemsToGet == 0 {
+		return &AsrResult{
+			Confidences:    []int{},
+			Words:          [][]Word{},
+			Transcriptions: []string{},
+		}
 	}
 
+	return &AsrResult{
+		Confidences:    res.Confidences[:itemsToGet],
+		Words:          res.Words[:itemsToGet],
+		Transcriptions: res.Transcriptions[:itemsToGet],
+	}
+
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (res *AsrResult) ToBytes() ([]byte, error) {

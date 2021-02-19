@@ -45,12 +45,14 @@ func (c *cerenceClient) SetState(st receiver.RequestState) {
 
 func (c *cerenceClient) SendHeader() {
 	err := c.client.SendHeaders(c.config.Headers)
-	ifErrorDie(err)
+	ifErrorDie(err, c)
 }
 
-func ifErrorDie(err error) {
+func ifErrorDie(err error, c *cerenceClient) {
 	if err != nil {
-		ConsoleLogger.Fatalln("error %s", err.Error())
+		c.client.Close()
+		c.wsClient.Close()
+		ConsoleLogger.Println("error %s", err.Error())
 	}
 }
 
@@ -58,14 +60,14 @@ func (c *cerenceClient) SendRequest() {
 	for _, part := range c.config.MultiParts {
 		if part.Type == JsonType {
 			err := sendJSONMsg(c.client, part)
-			ifErrorDie(err)
+			ifErrorDie(err, c)
 		}
 	}
 }
 
 func (c *cerenceClient) SendEndRequest() {
 	err := c.client.SendMultiPartEnd()
-	ifErrorDie(err)
+	ifErrorDie(err, c)
 }
 
 func (c *cerenceClient) SendAudioChunk(chunk []byte) {
@@ -81,13 +83,12 @@ func (c *cerenceClient) SendAudioChunk(chunk []byte) {
 func sendAudioMsg(client *HttpV2Client, part config2.MultiPart, chunk []byte) {
 
 	err := client.SendMultiPart(part.Parameters, chunk)
-	ifErrorDie(err)
+	ifErrorDie(err, nil) // HERE??
 }
 
 func sendJSONMsg(client *HttpV2Client, part config2.MultiPart) error {
 	bodyData, _ := json.Marshal(part.Body)
 	if err := client.SendMultiPart(part.Parameters, bodyData); err != nil {
-		ConsoleLogger.Fatalln(err)
 		return err
 	}
 	return nil
