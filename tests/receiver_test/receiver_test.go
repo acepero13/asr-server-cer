@@ -54,7 +54,7 @@ func TestReceivesFirstChunkCallsSendHeaderPlusFirstChunk(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.ReceiveWithClient(c, []byte("hello")).(*dummyClient)
+	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -84,7 +84,7 @@ func TestReceivesSecondChunkCallsSendsOnlyOneChunk(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.ReceiveWithClient(c, []byte("hello")).(*dummyClient)
+	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -115,7 +115,7 @@ func TestReceivesLastChunkCallsSendsChunkAndCloseRequest(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.ReceiveWithClient(c, []byte("hello")).(*dummyClient)
+	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -148,7 +148,7 @@ func TestReceivesAsrEndedEventResetsChunkCounter(t *testing.T) {
 
 	c.state = s
 
-	var client = receiver.ReceiveWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
+	var client = receiver.SendWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
 
 	var st = client.GetState()
 	if st.IsFirstChunk != true {
@@ -167,14 +167,14 @@ func TestReceivesAsrEndedEventResetsChunkCounterAndAfterFirstChunkItResetsItToFa
 
 	c.state = s
 
-	var client *dummyClient = receiver.ReceiveWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
+	var client *dummyClient = receiver.SendWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
 
 	var st = client.GetState()
 	if st.IsFirstChunk != true {
 		t.Errorf("Should reset the chunk counter")
 	}
 
-	var client2 *dummyClient = receiver.ReceiveWithClient(c, []byte("hello")).(*dummyClient)
+	var client2 *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	var st2 = client2.GetState()
 	if st2.IsFirstChunk != false {

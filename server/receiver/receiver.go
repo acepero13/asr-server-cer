@@ -18,13 +18,14 @@ type Client interface {
 	SendEndRequest()
 	GetState() RequestState
 	SetState(st RequestState)
+	Close()
 }
 
 type asrEvent struct {
 	Event string `json:"asr_event"`
 }
 
-func ReceiveWithClient(c Client, data []byte) Client {
+func SendWithClient(c Client, data []byte) Client {
 	var s = c.GetState()
 	if strings.Contains(string(data), "asr_event") {
 		var ev asrEvent
