@@ -32,6 +32,9 @@ type SError struct {
 	Level Severity
 }
 
+//ClientCallbacks Api for callback functions for ws events
+//OnMessage New message arrived from client
+//Write sync write to send to client
 type ClientCallbacks interface {
 	OnMessage(conn *websocket.Conn, msg []byte)
 	Write(conn *websocket.Conn, msg []byte)
