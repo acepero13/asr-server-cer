@@ -6,11 +6,13 @@ import (
 )
 import "encoding/json"
 
+//RequestState The current state of the request to cerence
 type RequestState struct {
 	IsFirstChunk bool
 	IsFinished   bool
 }
 
+//Client API to send the information to Cerence server
 type Client interface {
 	SendHeader()
 	SendRequest()
@@ -25,6 +27,7 @@ type asrEvent struct {
 	Event string `json:"asr_event"`
 }
 
+//SendWithClient Sends the right information to cerence server, based on the current status
 func SendWithClient(c Client, data []byte) Client {
 	var s = c.GetState()
 	if strings.Contains(string(data), "asr_event") {

@@ -11,11 +11,11 @@ import (
 	"time"
 )
 
+//Client Information related to one client
 type Client struct {
-	wsClient          *websocket.Conn
-	sender            *Sender
-	isFinishedChannel chan bool
-	writeMutex        *sync.Mutex
+	wsClient   *websocket.Conn
+	sender     *Sender
+	writeMutex *sync.Mutex
 }
 
 type clients struct {
@@ -23,6 +23,7 @@ type clients struct {
 	clientMutex sync.Mutex
 }
 
+//ConnectedClients List for connected clients. Not used at the moment
 var ConnectedClients = clients{
 	clients: []*Client{},
 }
@@ -42,10 +43,9 @@ func newClient(conn *websocket.Conn) *Client {
 	logIfErr(client.Connect(), "Error connecting to cerence... ")
 
 	cli := &Client{
-		wsClient:          conn,
-		sender:            NewSender(client, config),
-		isFinishedChannel: make(chan bool),
-		writeMutex:        &sync.Mutex{},
+		wsClient:   conn,
+		sender:     NewSender(client, config),
+		writeMutex: &sync.Mutex{},
 	}
 	go startReceiving(cli)
 	return cli
@@ -94,6 +94,7 @@ func process(msg bytes.Buffer, cli *Client) {
 
 }
 
+//OnError When an error occurs related with the websocket communication
 func (c *Client) OnError(err SError) {
 	if err.Level == CRITIC { // TODO: Die here
 		fmt.Printf("Critical error %s\n", err.Err.Error())
@@ -102,10 +103,12 @@ func (c *Client) OnError(err SError) {
 	}
 }
 
+//OnClose When the websocket connection is closed
 func (c *Client) OnClose() {
 
 }
 
+//OnMessage When a new message arrives from the client. It contains the msg as a byte array
 func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
 	c.sender = receiver.SendWithClient(c.sender, msg).(*Sender)
 	if c.sender.GetState().IsFinished {
@@ -117,6 +120,7 @@ func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
 	}
 }
 
+//Write Synchronized method that sends to the client information. Avoids concurrent socket write
 func (c *Client) Write(conn *websocket.Conn, msg []byte) {
 	c.writeMutex.Lock()
 	defer c.writeMutex.Unlock()

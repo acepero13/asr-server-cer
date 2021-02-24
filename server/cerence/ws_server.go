@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	CRITIC      = Severity{"critic"}
+	//CRITIC A critical error occurred in the websocket
+	CRITIC = Severity{"critic"}
+	//UNIMPORTANT A non critical error happened. In general this kind of error should be logged only.
 	UNIMPORTANT = Severity{"not important"}
 )
 

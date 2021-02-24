@@ -9,12 +9,14 @@ import (
 	"github.com/alvaro/asr_server/server/receiver"
 )
 
+//Sender  Stateful sender. Sends request to cerence client based on the current chunk state
 type Sender struct {
 	state         *receiver.RequestState
 	cerenceClient *HttpV2Client
 	config        *config2.Config
 }
 
+//NewSender Creates a new stateful cerence sender. Encapsulate logic for incoming chunks
 func NewSender(cerenceClient *HttpV2Client, config *config2.Config) *Sender {
 	var state *receiver.RequestState
 	state = new(receiver.RequestState)
@@ -24,19 +26,23 @@ func NewSender(cerenceClient *HttpV2Client, config *config2.Config) *Sender {
 	return &Sender{cerenceClient: cerenceClient, config: config, state: state}
 }
 
+//GetState Returns the current state
 func (c *Sender) GetState() receiver.RequestState {
 	return *c.state
 }
 
+//SetState Sets a new state
 func (c *Sender) SetState(st receiver.RequestState) {
 	*c.state = st
 }
 
+//SendHeader Sends Header information to cerence
 func (c *Sender) SendHeader() {
 	fmt.Println("Sending header")
 	logIfErr(c.cerenceClient.SendHeaders(c.config.Headers), "Cannot Send Header")
 }
 
+//SendRequest Sends an ASR request to cerence
 func (c *Sender) SendRequest() {
 	fmt.Println("Sending request")
 	for _, part := range c.config.MultiParts {
@@ -47,21 +53,20 @@ func (c *Sender) SendRequest() {
 	}
 }
 
+//SendEndRequest Sends that the asr request has finished
 func (c *Sender) SendEndRequest() {
 	fmt.Println("Sending END request")
 	logIfErr(c.cerenceClient.SendMultiPartEnd(), "Cannot send end request")
 }
 
+//Close Closes the connection with cerence server
 func (c *Sender) Close() {
 	logIfErr(c.cerenceClient.Close(), "Error closing connection with cerence client")
 }
 
-func (c *Sender) ReConnect() {
-	logIfErr(c.cerenceClient.Connect(), "Error reconnecting connection with cerence client")
-}
-
+//SendAudioChunk Sends the audio chunk to cerence server. It accepts a chunk of raw audio data
 func (c *Sender) SendAudioChunk(chunk []byte) {
-	for _, part := range c.config.MultiParts { // TODO: Not necessary to use a for here
+	for _, part := range c.config.MultiParts {
 		if part.Type == util.AudioType {
 			logIfErr(c.cerenceClient.SendMultiPart(part.Parameters, chunk), "Cannot send audio chunk")
 		}
