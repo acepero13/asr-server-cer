@@ -3,20 +3,12 @@ package receiver_test
 import "testing"
 import "github.com/alvaro/asr_server/server/receiver"
 
-type dummyCommand struct {
-	received string
-}
-
 type dummyClient struct {
 	headerCalled      bool
 	requestCalled     bool
 	endRequestCalled  bool
 	audioChunkCounter int
 	state             *receiver.RequestState
-}
-
-func (m dummyCommand) Execute(data []byte) { // Implements command interface
-
 }
 
 func (c *dummyClient) SendHeader() {
@@ -27,7 +19,7 @@ func (c *dummyClient) SendRequest() {
 	c.requestCalled = true
 }
 
-func (c *dummyClient) SendAudioChunk(data []byte) {
+func (c *dummyClient) SendAudioChunk(chunk []byte) {
 	c.audioChunkCounter++
 }
 
@@ -43,6 +35,10 @@ func (c *dummyClient) SetState(st receiver.RequestState) {
 	*c.state = st
 }
 
+func (c *dummyClient) Close() {
+	// Do nothing
+}
+
 func TestReceivesFirstChunkCallsSendHeaderPlusFirstChunk(t *testing.T) {
 	var c *dummyClient
 	c = new(dummyClient)
@@ -54,7 +50,7 @@ func TestReceivesFirstChunkCallsSendHeaderPlusFirstChunk(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
+	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -84,7 +80,7 @@ func TestReceivesSecondChunkCallsSendsOnlyOneChunk(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
+	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -115,7 +111,7 @@ func TestReceivesLastChunkCallsSendsChunkAndCloseRequest(t *testing.T) {
 
 	c.state = s
 
-	var client *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
+	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	if c == nil {
 		t.Errorf("client should not be null")
@@ -167,14 +163,14 @@ func TestReceivesAsrEndedEventResetsChunkCounterAndAfterFirstChunkItResetsItToFa
 
 	c.state = s
 
-	var client *dummyClient = receiver.SendWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
+	var client = receiver.SendWithClient(c, []byte(`{"asr_event": "stopped"}`)).(*dummyClient)
 
 	var st = client.GetState()
 	if st.IsFirstChunk != true {
 		t.Errorf("Should reset the chunk counter")
 	}
 
-	var client2 *dummyClient = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
+	var client2 = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
 	var st2 = client2.GetState()
 	if st2.IsFirstChunk != false {
