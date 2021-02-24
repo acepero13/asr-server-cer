@@ -5,19 +5,19 @@ import (
 	"cloud-client-go/util"
 	"encoding/json"
 	"fmt"
-	. "github.com/acepero13/cloud-client-go/http_v2_client"
+	"github.com/acepero13/cloud-client-go/http_v2_client"
 	"github.com/alvaro/asr_server/server/receiver"
 )
 
 //Sender  Stateful sender. Sends request to cerence client based on the current chunk state
 type Sender struct {
 	state         *receiver.RequestState
-	cerenceClient *HttpV2Client
+	cerenceClient *http_v2_client.HttpV2Client
 	config        *config2.Config
 }
 
 //NewSender Creates a new stateful cerence sender. Encapsulate logic for incoming chunks
-func NewSender(cerenceClient *HttpV2Client, config *config2.Config) *Sender {
+func NewSender(cerenceClient *http_v2_client.HttpV2Client, config *config2.Config) *Sender {
 	var state *receiver.RequestState
 	state = new(receiver.RequestState)
 	state.IsFirstChunk = true

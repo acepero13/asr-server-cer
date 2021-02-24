@@ -4,7 +4,7 @@ import (
 	"bytes"
 	config2 "cloud-client-go/config"
 	"fmt"
-	. "github.com/acepero13/cloud-client-go/http_v2_client"
+	"github.com/acepero13/cloud-client-go/http_v2_client"
 	"github.com/alvaro/asr_server/server/receiver"
 	"github.com/gorilla/websocket"
 	"sync"
@@ -28,6 +28,7 @@ var ConnectedClients = clients{
 	clients: []*Client{},
 }
 
+//OnConnected When a new ws client connects, it returns a client which is ready to connect to cerence server
 func OnConnected(conn *websocket.Conn) Client {
 	ConnectedClients.clientMutex.Lock()
 	client := newClient(conn)
@@ -38,7 +39,13 @@ func OnConnected(conn *websocket.Conn) Client {
 
 func newClient(conn *websocket.Conn) *Client {
 	config := config2.ReadConfig("config/asr_sem.json")
-	client := NewHttpV2Client(config.Host, config.Port, WithProtocol(config.Protocol), WithPath(config.Path), WithBoundary(config.GetBoundary()))
+	client := http_v2_client.NewHttpV2Client(
+		config.Host,
+		config.Port,
+		http_v2_client.WithProtocol(config.Protocol),
+		http_v2_client.WithPath(config.Path),
+		http_v2_client.WithBoundary(config.GetBoundary()),
+	)
 
 	logIfErr(client.Connect(), "Error connecting to cerence... ")
 
@@ -54,7 +61,12 @@ func newClient(conn *websocket.Conn) *Client {
 func (c *Client) reconnectClient() {
 	// Try to reconnect
 	config := config2.ReadConfig("config/asr_sem.json")
-	client := NewHttpV2Client(config.Host, config.Port, WithProtocol(config.Protocol), WithPath(config.Path), WithBoundary(config.GetBoundary()))
+	client := http_v2_client.NewHttpV2Client(config.Host,
+		config.Port,
+		http_v2_client.WithProtocol(config.Protocol),
+		http_v2_client.WithPath(config.Path),
+		http_v2_client.WithBoundary(config.GetBoundary()),
+	)
 	logIfErr(client.Connect(), "Error connecting to cerence... ")
 	c.sender = NewSender(client, config)
 	go startReceiving(c)
