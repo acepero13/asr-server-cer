@@ -12,10 +12,10 @@ import (
 )
 
 type Client struct {
-	wsClient       *websocket.Conn
-	sender         *Sender
-	messageChannel chan bytes.Buffer
-	writeMutex     *sync.Mutex
+	wsClient          *websocket.Conn
+	sender            *Sender
+	isFinishedChannel chan bool
+	writeMutex        *sync.Mutex
 }
 
 type clients struct {
@@ -42,14 +42,22 @@ func newClient(conn *websocket.Conn) *Client {
 	logIfErr(client.Connect(), "Error connecting to cerence... ")
 
 	cli := &Client{
-		wsClient:       conn,
-		sender:         NewSender(client, config),
-		messageChannel: make(chan bytes.Buffer),
-		writeMutex:     &sync.Mutex{},
+		wsClient:          conn,
+		sender:            NewSender(client, config),
+		isFinishedChannel: make(chan bool),
+		writeMutex:        &sync.Mutex{},
 	}
-	//go process(cli)
 	go startReceiving(cli)
 	return cli
+}
+
+func (c *Client) reconnectClient() {
+	// Try to reconnect
+	config := config2.ReadConfig("config/asr_sem.json")
+	client := NewHttpV2Client(config.Host, config.Port, WithProtocol(config.Protocol), WithPath(config.Path), WithBoundary(config.GetBoundary()))
+	logIfErr(client.Connect(), "Error connecting to cerence... ")
+	c.sender = NewSender(client, config)
+	go startReceiving(c)
 }
 
 func startReceiving(cerenceCli *Client) {
@@ -59,7 +67,7 @@ func startReceiving(cerenceCli *Client) {
 		if string(chunk.Body.Bytes()) == "Close" {
 			fmt.Println("Please close connection")
 			time.Sleep(30 * time.Millisecond)
-			logIfErr(client.Connect(), "Error reconnecting") // TODO: Maybe is better to connect on demand
+			//logIfErr(client.Connect(), "Error reconnecting") // TODO: Maybe is better to connect on demand
 			break
 		}
 		fmt.Println(chunk.Body.String())
@@ -73,6 +81,9 @@ func process(msg bytes.Buffer, cli *Client) {
 	var singleResult *receiver.AsrResult
 
 	asrResult, errDecod := receiver.NewAsrResultFrom(msg.Bytes())
+	if asrResult == nil {
+		return
+	}
 	singleResult = asrResult.GetAtMost(1)
 
 	toSend, errEncod := singleResult.ToBytes()
@@ -102,7 +113,7 @@ func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
 		c.sender.Close()
 
 		time.Sleep(30 * time.Millisecond)
-		c.sender.ReConnect()
+		c.reconnectClient()
 	}
 }
 

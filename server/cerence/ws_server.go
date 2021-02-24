@@ -51,6 +51,7 @@ func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) Client) {
 
 func handleConnections(onNewClient func(conn *websocket.Conn) Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//TODO: Make a wait here
 		ws, err := upgrader.Upgrade(w, r, nil)
 
 		callback := onNewClient(ws)
