@@ -1,6 +1,7 @@
 package cerence
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
@@ -45,7 +46,7 @@ type ClientCallbacks interface {
 }
 
 //WebSocketApp Higher level APIS for ws connection. Similar to js
-func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) Client) {
+func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) *Client) {
 
 	http.HandleFunc("/ws", handleConnections(onNewClient))
 
@@ -54,7 +55,7 @@ func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) Client) {
 	dieIfErr(err, "Cannot serve")
 }
 
-func handleConnections(onNewClient func(conn *websocket.Conn) Client) http.HandlerFunc {
+func handleConnections(onNewClient func(conn *websocket.Conn) *Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
 
@@ -62,28 +63,43 @@ func handleConnections(onNewClient func(conn *websocket.Conn) Client) http.Handl
 
 		go receiveFromWs(ws, callback)
 
-		possibleCritic(err, callback)
+		possibleCritic(err, *callback)
 
 		defer func(ws *websocket.Conn) {
 			//errClose := ws.Close() // TODO: See why this happens
 			callback.OnClose()
-			possibleNotImportant(nil, callback)
+			possibleNotImportant(nil, *callback)
 		}(ws)
 
 	}
 }
 
-func receiveFromWs(ws *websocket.Conn, callbacks Client) {
+func receiveFromWs(ws *websocket.Conn, callbacks *Client) {
 	var queue [][]byte
 	for {
 		_, data, err := ws.ReadMessage()
-		possibleNotImportant(err, callbacks)
+		possibleNotImportant(err, *callbacks)
 		actualQueue := enqueue(queue, data)
 
 		msg, actualQueue := dequeue(actualQueue)
 		queue = actualQueue
 		time.Sleep(30 * time.Millisecond)
+		wsErr := notify(ws, callbacks, err, msg)
+		if wsErr != nil {
+			break
+		}
+	}
+}
+
+func notify(ws *websocket.Conn, callbacks *Client, err error, msg []byte) error {
+	if err == nil {
 		callbacks.OnMessage(ws, msg)
+		return nil
+	} else {
+		callbacks.OnClose()
+		logIfErr(ws.Close(), "Error closing ws")
+		return errors.New("error in ws")
+
 	}
 }
 

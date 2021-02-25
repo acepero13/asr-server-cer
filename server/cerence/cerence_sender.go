@@ -79,3 +79,11 @@ func (c *Sender) SendAudioChunk(chunk []byte) {
 func (c *Sender) Connect() error {
 	return c.cerenceClient.Connect()
 }
+
+func (c *Sender) IsConnected() bool {
+	err := c.cerenceClient.CheckConnection()
+	if err != nil {
+		return false
+	}
+	return true
+}

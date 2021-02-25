@@ -29,48 +29,41 @@ var ConnectedClients = clients{
 }
 
 //OnConnected When a new ws client connects, it returns a client which is ready to connect to cerence server
-func OnConnected(conn *websocket.Conn) Client {
+func OnConnected(conn *websocket.Conn) *Client {
 	ConnectedClients.clientMutex.Lock()
 	client := newClient(conn)
 	ConnectedClients.clients = append(ConnectedClients.clients, client)
 	ConnectedClients.clientMutex.Unlock()
-	return *client
+	fmt.Printf("New client connected. We have: %d connected client(s)", len(ConnectedClients.clients))
+	return client
 }
 
 func newClient(conn *websocket.Conn) *Client {
-	config, err := config3.GiveMeAConfig()
-	disconnectIfErr(err, conn)
-
-	logIfErr(err, "Problem getting the config")
-	client := http_v2_client.NewHttpV2Client(
-		config.Host,
-		config.Port,
-		http_v2_client.WithProtocol(config.Protocol),
-		http_v2_client.WithPath(config.Path),
-		http_v2_client.WithBoundary(config.GetBoundary()),
-	)
-
-	cli := &Client{
+	return &Client{
 		wsClient:   conn,
-		sender:     NewSender(client, config),
+		sender:     newSender(conn),
 		writeMutex: &sync.Mutex{},
 	}
 
-	return cli
 }
 
-func (c *Client) reconnectClient() {
-	// TODO: Refactor and consolidate with connect
-	// Try to reconnect
+func (c *Client) reconnectToCerence() {
+	c.sender.Close()
+	c.sender = nil
+	time.Sleep(30 * time.Millisecond)
+	c.sender = newSender(c.wsClient)
+}
+
+func newSender(conn *websocket.Conn) *Sender {
 	config, err := config3.GiveMeAConfig()
-	disconnectIfErr(err, c.wsClient)
+	disconnectIfErr(err, conn)
 	client := http_v2_client.NewHttpV2Client(config.Host,
 		config.Port,
 		http_v2_client.WithProtocol(config.Protocol),
 		http_v2_client.WithPath(config.Path),
 		http_v2_client.WithBoundary(config.GetBoundary()),
 	)
-	c.sender = NewSender(client, config)
+	return NewSender(client, config)
 
 }
 
@@ -124,18 +117,15 @@ func (c *Client) OnClose() {
 
 //OnMessage When a new message arrives from the client. It contains the msg as a byte array
 func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
-	currentState := c.sender.GetState()
-	if currentState.IsFirstChunk && !currentState.IsFinished {
+	if !c.sender.IsConnected() {
 		logIfErr(c.sender.Connect(), "Error connecting to cerence server")
 		go startReceiving(c)
 	}
 	c.sender = receiver.SendWithClient(c.sender, msg).(*Sender)
-	if c.sender.GetState().IsFinished {
-		c.Write(conn, []byte(`{"recognition_finished": "1"}`)) // TODO: Too soon to close
-		c.sender.Close()
 
-		time.Sleep(30 * time.Millisecond)
-		c.reconnectClient()
+	if c.sender.GetState().IsFinished {
+		c.reconnectToCerence()
+
 	}
 }
 
