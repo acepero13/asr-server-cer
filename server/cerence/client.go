@@ -2,9 +2,9 @@ package cerence
 
 import (
 	"bytes"
-	config2 "cloud-client-go/config"
 	"fmt"
 	"github.com/acepero13/cloud-client-go/http_v2_client"
+	config3 "github.com/alvaro/asr_server/server/config"
 	"github.com/alvaro/asr_server/server/receiver"
 	"github.com/gorilla/websocket"
 	"sync"
@@ -38,7 +38,10 @@ func OnConnected(conn *websocket.Conn) Client {
 }
 
 func newClient(conn *websocket.Conn) *Client {
-	config := config2.ReadConfig("config/asr_sem.json")
+	config, err := config3.GiveMeAConfig()
+	disconnectIfErr(err, conn)
+
+	logIfErr(err, "Problem getting the config")
 	client := http_v2_client.NewHttpV2Client(
 		config.Host,
 		config.Port,
@@ -60,7 +63,8 @@ func newClient(conn *websocket.Conn) *Client {
 
 func (c *Client) reconnectClient() {
 	// Try to reconnect
-	config := config2.ReadConfig("config/asr_sem.json")
+	config, err := config3.GiveMeAConfig()
+	disconnectIfErr(err, c.wsClient)
 	client := http_v2_client.NewHttpV2Client(config.Host,
 		config.Port,
 		http_v2_client.WithProtocol(config.Protocol),
@@ -117,7 +121,7 @@ func (c *Client) OnError(err SError) {
 
 //OnClose When the websocket connection is closed
 func (c *Client) OnClose() {
-
+	c.sender.Close()
 }
 
 //OnMessage When a new message arrives from the client. It contains the msg as a byte array
@@ -137,6 +141,13 @@ func (c *Client) Write(conn *websocket.Conn, msg []byte) {
 	c.writeMutex.Lock()
 	defer c.writeMutex.Unlock()
 	logIfErr(conn.WriteJSON(msg), "Error sending recognition finished")
+}
+
+func disconnectIfErr(err error, conn *websocket.Conn) {
+	if err != nil {
+		fmt.Println("Cannot retrieve a config right now. We will disconnect the client")
+		logIfErr(conn.Close(), "Cannot close connection with client")
+	}
 }
 
 func logIfErr(err error, msg string) {

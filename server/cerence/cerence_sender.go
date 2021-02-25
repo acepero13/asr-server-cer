@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/acepero13/cloud-client-go/http_v2_client"
+	"github.com/alvaro/asr_server/server/config"
 	"github.com/alvaro/asr_server/server/receiver"
 )
 
@@ -61,6 +62,7 @@ func (c *Sender) SendEndRequest() {
 
 //Close Closes the connection with cerence server
 func (c *Sender) Close() {
+	logIfErr(config.Release(c.config), "Error while releasing the current config")
 	logIfErr(c.cerenceClient.Close(), "Error closing connection with cerence client")
 }
 
@@ -72,4 +74,8 @@ func (c *Sender) SendAudioChunk(chunk []byte) {
 		}
 	}
 
+}
+
+func (c *Sender) Connect() error {
+	return c.cerenceClient.Connect()
 }
