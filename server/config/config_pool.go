@@ -3,6 +3,7 @@ package config
 import (
 	config2 "cloud-client-go/config"
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,11 +23,21 @@ var configurationPool = &configPool{
 
 func init() {
 	configBaseName := "asr_sem_$.json"
+	baseConfigPath := getBaseConfigPath()
 	for i := 0; i < configurationPool.maxConfigs; i++ {
-		configPath := "configs/" + strings.Replace(configBaseName, "$", strconv.Itoa(i), 1)
+		configPath := baseConfigPath + strings.Replace(configBaseName, "$", strconv.Itoa(i), 1)
 		jsonConfig := config2.ReadConfig(configPath)
 		configurationPool.configurations[jsonConfig] = false
 
+	}
+}
+
+func getBaseConfigPath() string {
+	isTestingEnvironment := strings.HasSuffix(os.Args[0], ".test")
+	if isTestingEnvironment {
+		return "../../configs/"
+	} else {
+		return "configs/"
 	}
 }
 
