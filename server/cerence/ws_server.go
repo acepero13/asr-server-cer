@@ -95,12 +95,11 @@ func notify(ws *websocket.Conn, callbacks *Client, err error, msg []byte) error 
 	if err == nil {
 		callbacks.OnMessage(ws, msg)
 		return nil
-	} else {
-		callbacks.OnClose()
-		logIfErr(ws.Close(), "Error closing ws")
-		return errors.New("error in ws")
-
 	}
+	callbacks.OnClose()
+	logIfErr(ws.Close(), "Error closing ws")
+	return errors.New("error in ws")
+
 }
 
 func possibleNotImportant(err error, callbacks Client) {

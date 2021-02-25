@@ -76,10 +76,12 @@ func (c *Sender) SendAudioChunk(chunk []byte) {
 
 }
 
+//Connect Connects to cerence server
 func (c *Sender) Connect() error {
 	return c.cerenceClient.Connect()
 }
 
+//IsConnected Returns true if the cerence client is connected to the server, false otherwise
 func (c *Sender) IsConnected() bool {
 	err := c.cerenceClient.CheckConnection()
 	if err != nil {

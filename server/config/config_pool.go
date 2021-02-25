@@ -36,9 +36,9 @@ func getBaseConfigPath() string {
 	isTestingEnvironment := strings.HasSuffix(os.Args[0], ".test")
 	if isTestingEnvironment {
 		return "../../configs/"
-	} else {
-		return "configs/"
 	}
+	return "configs/"
+
 }
 
 //GiveMeAConfig Returns a config from the config pool
