@@ -109,8 +109,9 @@ func process(msg bytes.Buffer, cli *Client) {
 
 //OnError When an error occurs related with the websocket communication
 func (c *Client) OnError(err SError) {
-	if err.Level == CRITIC { // TODO: Die here
-		fmt.Printf("Critical error %s\n", err.Err.Error())
+	if err.Level == CRITIC {
+		fmt.Printf("Critical error. Disconnecting client %s\n", err.Err.Error())
+		logIfErr(c.wsClient.Close(), "Error closing ws client")
 	} else if err.Level == UNIMPORTANT {
 		fmt.Printf("Critical error %s\n", err.Err.Error())
 	}

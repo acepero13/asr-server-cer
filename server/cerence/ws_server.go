@@ -56,7 +56,6 @@ func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) Client) {
 
 func handleConnections(onNewClient func(conn *websocket.Conn) Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//TODO: Make a wait here
 		ws, err := upgrader.Upgrade(w, r, nil)
 
 		callback := onNewClient(ws)
@@ -77,7 +76,6 @@ func handleConnections(onNewClient func(conn *websocket.Conn) Client) http.Handl
 func receiveFromWs(ws *websocket.Conn, callbacks Client) {
 	var queue [][]byte
 	for {
-		// TODO: Break on close
 		_, data, err := ws.ReadMessage()
 		possibleNotImportant(err, callbacks)
 		actualQueue := enqueue(queue, data)
