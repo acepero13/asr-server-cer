@@ -50,18 +50,17 @@ func newClient(conn *websocket.Conn) *Client {
 		http_v2_client.WithBoundary(config.GetBoundary()),
 	)
 
-	logIfErr(client.Connect(), "Error connecting to cerence... ")
-
 	cli := &Client{
 		wsClient:   conn,
 		sender:     NewSender(client, config),
 		writeMutex: &sync.Mutex{},
 	}
-	go startReceiving(cli)
+
 	return cli
 }
 
 func (c *Client) reconnectClient() {
+	// TODO: Refactor and consolidate with connect
 	// Try to reconnect
 	config, err := config3.GiveMeAConfig()
 	disconnectIfErr(err, c.wsClient)
@@ -71,9 +70,8 @@ func (c *Client) reconnectClient() {
 		http_v2_client.WithPath(config.Path),
 		http_v2_client.WithBoundary(config.GetBoundary()),
 	)
-	logIfErr(client.Connect(), "Error connecting to cerence... ")
 	c.sender = NewSender(client, config)
-	go startReceiving(c)
+
 }
 
 func startReceiving(cerenceCli *Client) {
@@ -83,7 +81,6 @@ func startReceiving(cerenceCli *Client) {
 		if string(chunk.Body.Bytes()) == "Close" {
 			fmt.Println("Please close connection")
 			time.Sleep(30 * time.Millisecond)
-			//logIfErr(client.Connect(), "Error reconnecting") // TODO: Maybe is better to connect on demand
 			break
 		}
 		fmt.Println(chunk.Body.String())
@@ -126,6 +123,11 @@ func (c *Client) OnClose() {
 
 //OnMessage When a new message arrives from the client. It contains the msg as a byte array
 func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
+	currentState := c.sender.GetState()
+	if currentState.IsFirstChunk && !currentState.IsFinished {
+		logIfErr(c.sender.Connect(), "Error connecting to cerence server")
+		go startReceiving(c)
+	}
 	c.sender = receiver.SendWithClient(c.sender, msg).(*Sender)
 	if c.sender.GetState().IsFinished {
 		c.Write(conn, []byte(`{"recognition_finished": "1"}`)) // TODO: Too soon to close
