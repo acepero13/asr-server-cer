@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	config3 "github.com/acepero13/asr_server/server/config"
+	"github.com/acepero13/asr_server/server/receiver"
 	"github.com/acepero13/cloud-client-go/http_v2_client"
-	config3 "github.com/alvaro/asr_server/server/config"
-	"github.com/alvaro/asr_server/server/receiver"
 	"github.com/gorilla/websocket"
 )
 

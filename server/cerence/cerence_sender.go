@@ -5,9 +5,9 @@ import (
 	"cloud-client-go/util"
 	"encoding/json"
 	"fmt"
+	"github.com/acepero13/asr_server/server/config"
+	"github.com/acepero13/asr_server/server/receiver"
 	"github.com/acepero13/cloud-client-go/http_v2_client"
-	"github.com/alvaro/asr_server/server/config"
-	"github.com/alvaro/asr_server/server/receiver"
 )
 
 //Sender  Stateful sender. Sends request to cerence client based on the current chunk state

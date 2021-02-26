@@ -2,7 +2,7 @@ package config
 
 import (
 	config2 "cloud-client-go/config"
-	"github.com/alvaro/asr_server/server/config"
+	"github.com/acepero13/asr_server/server/config"
 	"testing"
 )
 
