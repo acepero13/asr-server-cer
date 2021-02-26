@@ -19,7 +19,7 @@ func (c *dummyClient) SendRequest() {
 	c.requestCalled = true
 }
 
-func (c *dummyClient) SendAudioChunk(chunk []byte) {
+func (c *dummyClient) SendAudioChunk(_ []byte) {
 	c.audioChunkCounter++
 }
 
@@ -52,10 +52,6 @@ func TestReceivesFirstChunkCallsSendHeaderPlusFirstChunk(t *testing.T) {
 
 	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
 
-	if c == nil {
-		t.Errorf("client should not be null")
-	}
-
 	if client.headerCalled != true {
 		t.Errorf("Should have sent the header")
 	}
@@ -81,10 +77,6 @@ func TestReceivesSecondChunkCallsSendsOnlyOneChunk(t *testing.T) {
 	c.state = s
 
 	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
-
-	if c == nil {
-		t.Errorf("client should not be null")
-	}
 
 	if client.headerCalled != false {
 		t.Errorf("Should have sent the header")
@@ -112,10 +104,6 @@ func TestReceivesLastChunkCallsSendsChunkAndCloseRequest(t *testing.T) {
 	c.state = s
 
 	var client = receiver.SendWithClient(c, []byte("hello")).(*dummyClient)
-
-	if c == nil {
-		t.Errorf("client should not be null")
-	}
 
 	if client.headerCalled != false {
 		t.Errorf("Should have sent the header")
