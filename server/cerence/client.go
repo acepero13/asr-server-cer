@@ -19,23 +19,33 @@ type Client struct {
 }
 
 type clients struct {
-	clients     []*Client
+	clients     map[*websocket.Conn]bool
 	clientMutex sync.Mutex
 }
 
 //ConnectedClients List for connected clients. Not used at the moment
 var ConnectedClients = clients{
-	clients: []*Client{},
+	clients: make(map[*websocket.Conn]bool),
 }
 
 //OnConnected When a new ws client connects, it returns a client which is ready to connect to cerence server
 func OnConnected(conn *websocket.Conn) *Client {
 	ConnectedClients.clientMutex.Lock()
 	client := newClient(conn)
-	ConnectedClients.clients = append(ConnectedClients.clients, client)
+	ConnectedClients.clients[conn] = true
 	ConnectedClients.clientMutex.Unlock()
-	fmt.Printf("New client connected. We have: %d connected client(s)", len(ConnectedClients.clients))
+	fmt.Printf("New client connected. We have: %d connected client(s)", getNumConnectedClients())
 	return client
+}
+
+func getNumConnectedClients() int {
+	var counter = 0
+	for _, isConnected := range ConnectedClients.clients {
+		if isConnected {
+			counter++
+		}
+	}
+	return counter
 }
 
 func newClient(conn *websocket.Conn) *Client {
@@ -104,7 +114,7 @@ func process(msg bytes.Buffer, cli *Client) {
 func (c *Client) OnError(err SError) {
 	if err.Level == CRITIC {
 		fmt.Printf("Critical error. Disconnecting client %s\n", err.Err.Error())
-		logIfErr(c.wsClient.Close(), "Error closing ws client")
+		logIfErr(DisconnectClient(c.wsClient), "Error closing ws client")
 	} else if err.Level == UNIMPORTANT {
 		fmt.Printf("Critical error %s\n", err.Err.Error())
 	}
@@ -124,6 +134,7 @@ func (c *Client) OnMessage(conn *websocket.Conn, msg []byte) {
 	c.sender = receiver.SendWithClient(c.sender, msg).(*Sender)
 
 	if c.sender.GetState().IsFinished {
+		c.Write(conn, []byte(`{"recognition_finished": "1"}`))
 		c.reconnectToCerence()
 
 	}
@@ -139,7 +150,7 @@ func (c *Client) Write(conn *websocket.Conn, msg []byte) {
 func disconnectIfErr(err error, conn *websocket.Conn) {
 	if err != nil {
 		fmt.Println("Cannot retrieve a config right now. We will disconnect the client")
-		logIfErr(conn.Close(), "Cannot close connection with client")
+		logIfErr(DisconnectClient(conn), "Cannot close connection with client")
 	}
 }
 

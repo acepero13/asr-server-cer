@@ -55,6 +55,17 @@ func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) *Client) {
 	dieIfErr(err, "Cannot serve")
 }
 
+//DisconnectClient Closes the connection with the specified client
+func DisconnectClient(conn *websocket.Conn) error {
+	defer func() { // Deregister from connected clients list
+		if _, ok := ConnectedClients.clients[conn]; ok {
+			ConnectedClients.clients[conn] = false
+		}
+	}()
+	return conn.Close()
+
+}
+
 func handleConnections(onNewClient func(conn *websocket.Conn) *Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
@@ -65,16 +76,11 @@ func handleConnections(onNewClient func(conn *websocket.Conn) *Client) http.Hand
 
 		possibleCritic(err, *callback)
 
-		defer func(ws *websocket.Conn) {
-			//errClose := ws.Close() // TODO: See why this happens
-			callback.OnClose()
-			possibleNotImportant(nil, *callback)
-		}(ws)
-
 	}
 }
 
 func receiveFromWs(ws *websocket.Conn, callbacks *Client) {
+
 	var queue [][]byte
 	for {
 		_, data, err := ws.ReadMessage()
@@ -97,7 +103,7 @@ func notify(ws *websocket.Conn, callbacks *Client, err error, msg []byte) error 
 		return nil
 	}
 	callbacks.OnClose()
-	logIfErr(ws.Close(), "Error closing ws")
+	logIfErr(DisconnectClient(ws), "Error closing ws")
 	return errors.New("error in ws")
 
 }
