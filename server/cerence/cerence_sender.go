@@ -2,12 +2,12 @@ package cerence
 
 import (
 	config2 "cloud-client-go/config"
+	"cloud-client-go/http_v2_client"
 	"cloud-client-go/util"
 	"encoding/json"
 	"fmt"
 	"github.com/acepero13/asr-server-cer/server/config"
 	"github.com/acepero13/asr-server-cer/server/receiver"
-	"github.com/acepero13/cloud-client-go/http_v2_client"
 )
 
 //Sender  Stateful sender. Sends request to cerence client based on the current chunk state
