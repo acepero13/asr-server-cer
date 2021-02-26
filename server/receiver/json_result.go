@@ -39,13 +39,6 @@ func (res *AsrResult) GetAtMost(numResults int) *AsrResult {
 
 }
 
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 //ToBytes Converts an AsrResult to its byte array representation
 func (res *AsrResult) ToBytes() ([]byte, error) {
 	return json.Marshal(res)
@@ -57,4 +50,11 @@ func NewAsrResultFrom(data []byte) (*AsrResult, error) {
 	err := json.Unmarshal(data, &result)
 
 	return &result, err
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

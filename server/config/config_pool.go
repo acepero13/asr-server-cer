@@ -32,15 +32,6 @@ func init() {
 	}
 }
 
-func getBaseConfigPath() string {
-	isTestingEnvironment := strings.HasSuffix(os.Args[0], ".test")
-	if isTestingEnvironment {
-		return "../../configs/"
-	}
-	return "configs/"
-
-}
-
 //GiveMeAConfig Returns a config from the config pool
 func GiveMeAConfig() (*config2.Config, error) {
 	configurationPool.poolMutex.Lock()
@@ -63,4 +54,13 @@ func Release(config *config2.Config) error {
 		return nil
 	}
 	return errors.New("cannot find the given config")
+}
+
+func getBaseConfigPath() string {
+	isTestingEnvironment := strings.HasSuffix(os.Args[0], ".test")
+	if isTestingEnvironment {
+		return "../../configs/"
+	}
+	return "configs/"
+
 }
