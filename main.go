@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/acepero13/asr_server/server/cerence"
+	"github.com/acepero13/asr-server-cer/server/cerence"
 )
 
 func main() {

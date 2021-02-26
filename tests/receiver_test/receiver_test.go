@@ -1,7 +1,7 @@
 package receiver_test
 
 import "testing"
-import "github.com/acepero13/asr_server/server/receiver"
+import "github.com/acepero13/asr-server-cer/server/receiver"
 
 type dummyClient struct {
 	headerCalled      bool

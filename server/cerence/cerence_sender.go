@@ -5,8 +5,8 @@ import (
 	"cloud-client-go/util"
 	"encoding/json"
 	"fmt"
-	"github.com/acepero13/asr_server/server/config"
-	"github.com/acepero13/asr_server/server/receiver"
+	"github.com/acepero13/asr-server-cer/server/config"
+	"github.com/acepero13/asr-server-cer/server/receiver"
 	"github.com/acepero13/cloud-client-go/http_v2_client"
 )
 
