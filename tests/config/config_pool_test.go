@@ -1,8 +1,8 @@
 package config
 
 import (
-	config2 "cloud-client-go/config"
 	"github.com/acepero13/asr-server-cer/server/config"
+	config2 "github.com/acepero13/cloud-client-go/config"
 	"testing"
 )
 
