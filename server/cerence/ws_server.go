@@ -51,7 +51,7 @@ func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) *Client) {
 	http.HandleFunc("/ws", handleConnections(onNewClient))
 
 	log.Println("http server started on :2701")
-	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
+	err := http.ListenAndServeTLS(":"+strconv.Itoa(port), "configs/server-certificate.pem", "configs/server-key.pem", nil)
 	dieIfErr(err, "Cannot serve")
 }
 

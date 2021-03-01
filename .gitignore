@@ -1,1 +1,5 @@
 /configs/asr_sem_*
+/configs/cert.pem
+/configs/key.pem
+/configs/*.pem
+/configs/*.p12
