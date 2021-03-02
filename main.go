@@ -29,7 +29,7 @@ func main() {
 		},
 		Action: func(c *cli.Context) error {
 			if noTsl {
-				fmt.Println("Warning: you are using ws as protocol. Keep in mind that the communication will not be encrypted")
+				fmt.Println("WARNING: you are using ws as protocol. Keep in mind that the communication will not be encrypted")
 			}
 			cerence.WebSocketApp(port, !noTsl, cerence.OnConnected)
 			return nil

@@ -1,7 +1,10 @@
 FROM golang:1.15-alpine3.13
 
+ENV port 2701
+ENV no-tls false
+
 # Copy the local package files to the container's workspace.
-ADD . /go/src/github.com/acepero13/asr-server-cer
+COPY . /go/src/github.com/acepero13/asr-server-cer
 
 WORKDIR /go/src/github.com/acepero13/asr-server-cer
 
@@ -16,7 +19,9 @@ RUN go install github.com/acepero13/asr-server-cer
 
 
 # Run the outyet command by default when the container starts.
-ENTRYPOINT /go/bin/asr-server-cer
+ENTRYPOINT ["/go/bin/asr-server-cer" , "--port", "2701"]
+
+CMD ["/go/bin/asr-server-cer" , "--port", "2701"]
 
 # Document that the service listens on port 2701.
 EXPOSE 2701
