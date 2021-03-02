@@ -15,3 +15,15 @@ How To Install Go and Set Up a Local Programming Environment](https://www.digita
 3. Go to `$GOPATH/bin` and copy the **configs** folder that contains the _asr configuration files_ for connecting to **cerence**
 
 4. In `$GOPATH/bin` execute: `./asr-server-cer`  
+
+## Running from Docker
+
+Build image 
+```bash
+docker build -t asr-server-cer .
+```
+
+Run Docker image
+```bash
+docker run -it -p 2701:2701 --net=host asr-server-cer:latest
+```
