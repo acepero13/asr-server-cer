@@ -21,7 +21,7 @@ How To Install Go and Set Up a Local Programming Environment](https://www.digita
 
 4. In `$GOPATH/bin` execute: `./asr-server-cer`  
 
-## Running from Docker
+## Run from Docker
 
 Build image 
 ```bash
