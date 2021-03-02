@@ -1,10 +1,10 @@
 package receiver
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
-import "encoding/json"
 
 //RequestState The current state of the request to cerence
 type RequestState struct {
@@ -31,18 +31,13 @@ type asrEvent struct {
 func SendWithClient(c Client, data []byte) Client {
 	var s = c.GetState()
 	if strings.Contains(string(data), "asr_event") {
-		var ev asrEvent
-		err := json.Unmarshal(data, &ev)
-		logIfErr(err, "Error parsing json")
-		if ev.Event == "stopped" {
-			var st = RequestState{}
-			st.IsFirstChunk = true
-			st.IsFinished = true
-			c.SetState(st)
-		}
+		processAsrEvent(data, c)
 		return c
-
 	}
+	return send(s, c, data)
+}
+
+func send(s RequestState, c Client, data []byte) Client {
 	if s.IsFirstChunk {
 		c.SendHeader()
 		c.SendRequest()
@@ -58,8 +53,19 @@ func SendWithClient(c Client, data []byte) Client {
 	st.IsFirstChunk = false
 	st.IsFinished = false
 	c.SetState(st)
-
 	return c
+}
+
+func processAsrEvent(data []byte, c Client) {
+	var ev asrEvent
+	err := json.Unmarshal(data, &ev)
+	logIfErr(err, "Error parsing json")
+	if ev.Event == "stopped" {
+		var st = RequestState{}
+		st.IsFirstChunk = true
+		st.IsFinished = true
+		c.SetState(st)
+	}
 }
 
 func logIfErr(err error, msg string) {

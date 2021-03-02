@@ -5,7 +5,12 @@ ASR recognition. It uses the library [github.com/acepero13/cloud-client-go](http
 
 This app opens the port **2701** and listens to messages sent via **websocket** to that port. It expects raw audio data (ex. taken from a microphone) and connects to **cerence** cloud server and notifies the client with the recognition
 
-## How to run
+## Settings
+Make sure that you have the corresponding files inside the **configs** folder. There you
+should place the server certificates (if you want to connect using **TLS**), and the configuration files (json) needed
+to connect to the **Cerence** server.
+
+## Run manually
 
 1. Set up your local development environment for **Go**. You can follow this tutorial [
 How To Install Go and Set Up a Local Programming Environment](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-ubuntu-18-04)
@@ -15,3 +20,15 @@ How To Install Go and Set Up a Local Programming Environment](https://www.digita
 3. Go to `$GOPATH/bin` and copy the **configs** folder that contains the _asr configuration files_ for connecting to **cerence**
 
 4. In `$GOPATH/bin` execute: `./asr-server-cer`  
+
+## Run from Docker
+
+Build image 
+```bash
+docker build -t asr-server-cer .
+```
+
+Run Docker image
+```bash
+docker run -it -p 2701:2701 --net=host asr-server-cer:latest
+```
