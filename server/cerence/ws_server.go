@@ -53,8 +53,8 @@ func WebSocketApp(port int, tls bool, onNewClient func(conn *websocket.Conn) *Cl
 	dieIfErr(listenAndServeTo(port, tls), "Cannot serve")
 }
 
-func listenAndServeTo(port int, useTls bool) error {
-	if useTls {
+func listenAndServeTo(port int, useTLS bool) error {
+	if useTLS {
 		return http.ListenAndServeTLS(":"+strconv.Itoa(port), "configs/server-certificate.pem", "configs/server-key.pem", nil)
 	}
 	return http.ListenAndServe(":"+strconv.Itoa(port), nil)
