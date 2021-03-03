@@ -37,7 +37,6 @@ You can also specify arguments to change the default configuration of the server
 if you want to run the server on a different port other than 2701, or you do not want to use
 encrypted communication.
 
-
 Run Docker image with arguments
 
 ```bash
