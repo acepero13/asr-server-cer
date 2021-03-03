@@ -32,3 +32,18 @@ Run Docker image
 ```bash
 docker run -it -p 2701:2701 --net=host asr-server-cer:latest
 ```
+
+You can also specify arguments to change the default configuration of the server. For example,
+if you want to run the server on a different port other than 2701, or you do not want to use
+encrypted communication.
+
+Run Docker image with arguments
+
+```bash
+docker run -it -p 2701:2701 --net=host asr-server-cer:latest --port 5005 --no-tls
+```
+
+Arguments
+> --port **value**  _port to start listening for raw audio data (default: 2701)_
+> 
+> --no-tls      _if present, uses an insecure communication protocol (ws) (default: false)_

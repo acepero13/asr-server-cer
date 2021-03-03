@@ -46,13 +46,18 @@ type ClientCallbacks interface {
 }
 
 //WebSocketApp Higher level APIS for ws connection. Similar to js
-func WebSocketApp(port int, onNewClient func(conn *websocket.Conn) *Client) {
+func WebSocketApp(port int, tls bool, onNewClient func(conn *websocket.Conn) *Client) {
 
 	http.HandleFunc("/ws", handleConnections(onNewClient))
+	log.Println("http server started on :" + strconv.Itoa(port))
+	dieIfErr(listenAndServeTo(port, tls), "Cannot serve")
+}
 
-	log.Println("http server started on " + strconv.Itoa(port))
-	err := http.ListenAndServeTLS(":"+strconv.Itoa(port), "configs/server-certificate.pem", "configs/server-key.pem", nil)
-	dieIfErr(err, "Cannot serve")
+func listenAndServeTo(port int, useTLS bool) error {
+	if useTLS {
+		return http.ListenAndServeTLS(":"+strconv.Itoa(port), "configs/server-certificate.pem", "configs/server-key.pem", nil)
+	}
+	return http.ListenAndServe(":"+strconv.Itoa(port), nil)
 }
 
 //DisconnectClient Closes the connection with the specified client
