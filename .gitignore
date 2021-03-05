@@ -3,3 +3,6 @@
 /configs/key.pem
 /configs/*.pem
 /configs/*.p12
+asr-server-cer
+/.vscode
+/.idea
