@@ -1,7 +1,11 @@
+![Build status](https://github.com/acepero13/asr-server-cer/actions/workflows/go.yml/badge.svg)
+[![codebeat badge](https://codebeat.co/badges/26a2ea5f-8e58-433b-9bb1-2d55bfda68ae)](https://codebeat.co/projects/github-com-acepero13-asr-server-cer-development)
+[![Go Report Card](https://goreportcard.com/badge/github.com/acepero13/asr-server-cer)](https://goreportcard.com/report/github.com/acepero13/asr-server-cer)
+
 # C-Server
 
 This is a small websocket server that expects audio chunks and sends out the Cerence cloud request for
-ASR recognition. It uses the library [github.com/acepero13/cloud-client-go](https://github.com/cerence/github.com/acepero13/cloud-client-go).
+ASR recognition. It uses the library [github.com/acepero13/cloud-client-go](https://github.com/acepero13/cloud-client-go).
 
 This app opens the port **2701** and listens to messages sent via **websocket** to that port. It expects raw audio data (ex. taken from a microphone) and connects to **cerence** cloud server and notifies the client with the recognition
 
