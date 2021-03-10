@@ -37,7 +37,7 @@ docker build -t asr-server-cer .
 Run Docker image
 
 ```bash
-docker run -it -p 2701:2701 --net=host asr-server-cer:latest
+docker run -it --rm -p 2701:2701 --net=host asr-server-cer:latest
 ```
 
 You can also specify arguments to change the default configuration of the server. For example,
@@ -47,7 +47,7 @@ encrypted communication.
 Run Docker image with arguments
 
 ```bash
-docker run -it -p 2701:2701 --net=host asr-server-cer:latest --port 5005 --no-tls
+docker run -it --rm -p 5005:5005 --net=host asr-server-cer:latest --port 5005 --no-tls
 ```
 
 Arguments
